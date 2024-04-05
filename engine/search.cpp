@@ -776,7 +776,7 @@ Value Search::quiescence_search(Position& position, Depth depth, Value alpha,
 
         bool is_move_quiet = position.move_is_quiet(move);
 
-        if (!is_in_check && (non_quiet_move_count >= 2 || is_move_quiet))
+        if (!is_in_check && (non_quiet_move_count > 2 || is_move_quiet))
         {
             continue;
         }
