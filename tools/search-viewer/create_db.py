@@ -20,6 +20,7 @@ PV_LIST_REGEX = re.compile(r"\[(\d+)\] PV LIST (.*)$")
 RAZORING_REGEX = re.compile(r"\[(\d+)\] RAZORING$")
 FUTILITY_REGEX = re.compile(r"\[(\d+)\] FUTILITY PRUNING$")
 NODES_SEARCHED_REGEX = re.compile(r"\[(\d+)\] NODES SEARCHED (\d+)$")
+IMPROVING_REGEX = re.compile(r"\[(\d+)\] IMPROVING ([01])$")
 
 
 def parseArguments():
@@ -87,6 +88,8 @@ class Parser:
                 pass
             elif (self._tryParseNodesSearched(line)):
                 pass
+            elif (self._tryParseImproving(line)):
+                pass
 
         return nodeIds
 
@@ -110,6 +113,7 @@ class Parser:
             self._updateChunk("razoring", 0)
             self._updateChunk("futility", 0)
             self._updateChunk("nodes_searched", 0)
+            self._updateChunk("improving", 0)
             return True
         return False
 
@@ -147,54 +151,39 @@ class Parser:
                 return True
         return False
 
+    def _tryParseField(self, regex, field, f = lambda m: m.group(2)):
+        def handle(line):
+            if (m := regex.match(line)):
+                if (int(m.group(1)) == self._get("ply")):
+                    self._updateChunk(field, f(m))
+                    return True
+            return False
+        return handle
+
     def _tryParsePosition(self, line):
-        if (m := POSITION_REGEX.match(line)):
-            if (int(m.group(1)) == self._get("ply")):
-                self._updateChunk("static_eval", int(m.group(2)))
-                return True
-        return False
+        return self._tryParseField(POSITION_REGEX, "static_eval", lambda m: int(m.group(2)))(line)
 
     def _tryParseMoveOrder(self, line):
-        if (m := MOVE_ORDER_REGEX.match(line)):
-            if (int(m.group(1)) == self._get("ply")):
-                self._updateChunk("move_order", m.group(2))
-                return True
-        return False
+        return self._tryParseField(MOVE_ORDER_REGEX, "move_order")(line)
 
     def _tryParsePvList(self, line):
-        if (m := PV_LIST_REGEX.match(line)):
-            if (int(m.group(1)) == self._get("ply")):
-                self._updateChunk("pv_list", m.group(2))
-                return True
-        return False
+        return self._tryParseField(PV_LIST_REGEX, "pv_list")(line)
 
     def _tryParseBestMove(self, line):
-        if (m := BEST_MOVE_REGEX.match(line)):
-            if (int(m.group(1)) == self._get("ply")):
-                self._updateChunk("best_move", m.group(2))
-                return True
-        return False
+        return self._tryParseField(BEST_MOVE_REGEX, "best_move")(line)
 
     def _tryParseRazoring(self, line):
-        if (m := RAZORING_REGEX.match(line)):
-            if (int(m.group(1)) == self._get("ply")):
-                self._updateChunk("razoring", 1)
-                return True
-        return False
+        return self._tryParseField(RAZORING_REGEX, "razoring", lambda _: 1)(line)
 
     def _tryParseFutilityPruning(self, line):
-        if (m := FUTILITY_REGEX.match(line)):
-            if (int(m.group(1)) == self._get("ply")):
-                self._updateChunk("futility", 1)
-                return True
-        return False
+        return self._tryParseField(FUTILITY_REGEX, "futility", lambda _: 1)(line)
 
     def _tryParseNodesSearched(self, line):
-        if (m := NODES_SEARCHED_REGEX.match(line)):
-            if (int(m.group(1)) == self._get("ply")):
-                self._updateChunk("nodes_searched", int(m.group(2)))
-                return True
-        return False
+        return self._tryParseField(NODES_SEARCHED_REGEX, "nodes_searched", lambda m: int(m.group(2)))(line)
+
+    def _tryParseImproving(self, line):
+        return self._tryParseField(IMPROVING_REGEX, "improving", lambda m: int(m.group(2)))(line)
+
 
 
 def main():

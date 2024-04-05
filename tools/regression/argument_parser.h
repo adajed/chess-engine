@@ -31,7 +31,7 @@ struct Args
           repeat(false),
           polyglot(""),
           book_depth(0),
-          pgn_file("games.pgn"),
+          pgn_file(),
           num_threads(1),
           seed(std::chrono::system_clock::now().time_since_epoch().count())
     {

@@ -713,7 +713,7 @@ Value Search::quiescence_search(Position& position, Depth depth, Value alpha,
 
     const bool PV_NODE = beta != alpha + 1;
 
-    LOG_DEBUG("[%d] ENTER QUIESCENCE_SEARCH depth=%d alpha=%ld beta=%ld isPV=%d fen=%s",
+    LOG_DEBUG("[%d] ENTER QUIESCENCE_SEARCH depth=%d alpha=%ld beta=%ld pvNode=%d fen=%s",
               info->_ply, depth, alpha, beta, static_cast<int>(PV_NODE), position.fen().c_str());
 
     if (stop_search || check_limits())

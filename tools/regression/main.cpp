@@ -156,7 +156,18 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    std::ofstream fd(args.pgn_file);
+    std::string pgn_file = args.pgn_file;
+    if (pgn_file.empty())
+    {
+        pgn_file = "games_" + args.engines[0].name + "_vs_" + args.engines[1].name + "_format";
+        for (auto const& f : args.game_format)
+        {
+            pgn_file += "_" + std::to_string(f.first.time_initial_ms / 60000) + "+" + std::to_string(f.first.time_increment_ms / 1000) 
+                      + ":" + std::to_string(f.second);
+        }
+        pgn_file += ".pgn";
+    }
+    std::ofstream fd(pgn_file);
 
     move_bitboards::init();
     zobrist::init();

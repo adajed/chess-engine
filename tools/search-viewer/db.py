@@ -1,7 +1,7 @@
 import sqlite3
 
 CHUNK_FIELDS = ["ply", "depth", "alpha", "beta", "isPV", "score", "fen",
-                "best_move", "move", "static_eval", "razoring", "futility", "nodes_searched", "cache_move",
+                "best_move", "move", "static_eval", "razoring", "futility", "nodes_searched", "improving", "cache_move",
                 "cache_depth", "cache_score", "cache_flag",
                 "move_order", "pv_list"]
 
@@ -29,6 +29,7 @@ class Database:
                        [razoring] INTEGER,
                        [futility] INTEGER,
                        [nodes_searched] INTEGER,
+                       [improving] INTEGER,
                        [cache_move] TEXT(5),
                        [cache_depth] INTEGER,
                        [cache_score] INTEGER,
