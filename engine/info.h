@@ -40,7 +40,7 @@ struct Info
     PieceHistory* _counter_move;
 };
 
-using StackInfo = std::array<Info, MAX_DEPTH * 2>;
+using StackInfo = std::array<Info, MAX_DEPTH * 2 + 2>;
 
 } /* namespace engine */
 

@@ -351,6 +351,8 @@ Value Search::search(Position& position, Depth depth, Value alpha, Value beta,
     // without any move
     if (!ROOT_NODE && (position.is_repeated() || position.is_draw())) EXIT_SEARCH(VALUE_DRAW);
 
+    (info + 2)->_killer_moves[0] = (info + 2)->_killer_moves[1] = NO_MOVE;
+
     Move* begin = ROOT_NODE ? &(*_root_moves.begin()) : MOVE_LIST[info->_ply];
     Move* end = ROOT_NODE ? &(*_root_moves.end())
                           : generate_moves(position, position.color(), begin);
@@ -495,9 +497,14 @@ Value Search::search(Position& position, Depth depth, Value alpha, Value beta,
         info->_static_eval = _scorer.score(position);
     }
 
-    /* const bool improving = !is_in_check && info->_ply >= 2 &&
-     * (info->_static_eval > (info - 2)->_static_eval || (info -
-     * 2)->_static_eval == VALUE_NONE); */
+    /* bool improving = true; */
+    /* if (is_in_check) */
+    /*     improving = false; */
+    /* else if (info->_ply >= 2 && (info - 2)->_static_eval != VALUE_NONE) */
+    /*     improving = info->_static_eval > (info - 2)->_static_eval; */
+    /* else if (info->_ply >= 4 && (info - 4)->_static_eval != VALUE_NONE) */
+    /*     improving = info->_static_eval > (info - 4)->_static_eval; */
+    /* LOG_DEBUG("[%d] IMPROVING %d", info->_ply, int(improving)); */
 
     // null move pruning
     if (!PV_NODE && !IS_NULL && !is_in_check &&
@@ -758,6 +765,8 @@ Value Search::quiescence_search(Position& position, Depth depth, Value alpha,
 
     _move_orderer.order_moves(position, begin, end, info);
 
+    int non_quiet_move_count = 0;
+
     for (int move_count = 0; move_count < n_moves; ++move_count)
     {
         Move move = begin[move_count];
@@ -765,10 +774,26 @@ Value Search::quiescence_search(Position& position, Depth depth, Value alpha,
         info->_counter_move =
             &_counter_move_table[position.piece_at(from(move))][to(move)];
 
-        if (!is_in_check && position.move_is_quiet(move))
+        bool is_move_quiet = position.move_is_quiet(move);
+
+        if (!is_in_check && (non_quiet_move_count >= 2 || is_move_quiet))
         {
             continue;
         }
+
+        // consider only queen promotions
+        if (promotion(move) != NO_PIECE_KIND && promotion(move) != QUEEN)
+        {
+            continue;
+        }
+
+        // don't consider captures with negative SEE
+        if (position.move_is_capture(move) && position.see(move) < 0)
+        {
+            continue;
+        }
+
+        non_quiet_move_count += int(!is_move_quiet);
 
         LOG_DEBUG("[%d] DO MOVE %s alpha=%ld beta=%ld", info->_ply,
                   position.uci(move).c_str(), alpha, beta);

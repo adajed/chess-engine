@@ -503,6 +503,33 @@ TEST(PositionTest, move_types)
     }
 }
 
+TEST(PositionTest, see)
+{
+    // fen, move, see
+    using TestCase = std::tuple<std::string, Move, Value>;
+
+    constexpr Value p = PIECE_VALUE[PAWN].eg;
+    constexpr Value n = PIECE_VALUE[KNIGHT].eg;
+    constexpr Value b = PIECE_VALUE[BISHOP].eg;
+    constexpr Value r = PIECE_VALUE[ROOK].eg;
+    constexpr Value q = PIECE_VALUE[QUEEN].eg;
+
+    std::vector<TestCase> test_cases = {
+        {"1k3r2/7b/8/5n2/6P1/4N3/8/1K3R2 w - - 0 1", create_move(SQ_G4, SQ_F5), n},
+        {"1k3r2/7b/8/5n2/6P1/4N3/8/1K3R2 w - - 0 1", create_move(SQ_F1, SQ_F5), n + b - r},
+        {"r1b1k2r/1p1p1p1p/p1n1p2p/q7/2P2P2/1PN5/P2Q2PP/2KR1B1R b kq - 0 16", create_move(SQ_A5, SQ_A2), p - q},
+        {"Q6r/1p3p1p/pkn4p/8/2P2P2/2q5/PP4PP/3K1B1R b - - 1 21", create_move(SQ_C3, SQ_C4), p - q},
+    };
+
+    for (const TestCase& test_case : test_cases)
+    {
+        Position position(std::get<0>(test_case));
+        Move move = std::get<1>(test_case);
+
+        EXPECT_EQ(position.see(move), std::get<2>(test_case));
+    }
+}
+
 /* TEST(ScoreTest, knight) */
 /* { */
 /*     Position position("rnbqkb1r/pp2pppp/2p5/3pP3/4n3/2N2N2/PPPP1PPP/R1BQKB1R w - -"); */

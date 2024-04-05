@@ -81,4 +81,11 @@ std::ostream& print_bitboard(std::ostream& stream, Bitboard bb)
     return stream;
 }
 
+std::string sq2str(Square sq)
+{
+    static const std::string ranks = "12345678";
+    static const std::string files = "abcdefgh";
+    return std::to_string(files[file(sq)]) + std::to_string(ranks[rank(sq)]);
+}
+
 }  // namespace engine

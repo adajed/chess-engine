@@ -290,7 +290,7 @@ TEST(Bitboard, lines)
     {
         for (Square to = SQ_A1; to <= SQ_H8; ++to)
         {
-            auto f = [from, to](int r, int f)
+            auto fun = [from, to](int r, int f)
             {
                 int r_from = static_cast<int>(rank(from));
                 int r_to = static_cast<int>(rank(to));
@@ -311,7 +311,7 @@ TEST(Bitboard, lines)
 
                 return false;
             };
-            check_bb(LINES[from][to], f);
+            check_bb(LINES[from][to], fun);
         }
     }
 }
