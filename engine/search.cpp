@@ -400,7 +400,7 @@ Value Search::search(Position& position, Depth depth, Value alpha, Value beta,
                   position.uci(entryPtr->value.move).c_str());
 
         const bool allowCutoff =
-            !PV_NODE || _ttable.isCurrentEpoch(entryPtr->epoch);
+            !PV_NODE && _ttable.isCurrentEpoch(entryPtr->epoch);
 
         if (allowCutoff)
         {
@@ -496,6 +496,7 @@ Value Search::search(Position& position, Depth depth, Value alpha, Value beta,
     {
         info->_static_eval = _scorer.score(position);
     }
+    LOG_DEBUG("[%d] POSITION score=%ld", info->_ply, info->_static_eval);
 
     /* bool improving = true; */
     /* if (is_in_check) */
@@ -638,7 +639,10 @@ Value Search::search(Position& position, Depth depth, Value alpha, Value beta,
             {
                 alpha = result;
                 best_move = move;
-                add_new_move_to_pv_list(info, move, info + 1);
+                if (PV_NODE)
+                {
+                    add_new_move_to_pv_list(info, move, info + 1);
+                }
 
                 if (result >= beta)
                 {
@@ -676,7 +680,7 @@ Value Search::search(Position& position, Depth depth, Value alpha, Value beta,
         }
     }
 
-    if (best_move == NO_MOVE)
+    if (best_move == NO_MOVE && PV_NODE)
     {
         best_move = begin[0];
         set_new_pv_list(info, best_move);
@@ -774,9 +778,10 @@ Value Search::quiescence_search(Position& position, Depth depth, Value alpha,
         info->_counter_move =
             &_counter_move_table[position.piece_at(from(move))][to(move)];
 
-        bool is_move_quiet = position.move_is_quiet(move);
-
-        if (!is_in_check && (non_quiet_move_count > 2 || is_move_quiet))
+        const bool move_is_quiet = position.move_is_quiet(move);
+        if (!is_in_check &&
+                (non_quiet_move_count > 2 || move_is_quiet) &&
+                (depth < MAX_DEPTH - 1 || !position.move_gives_check(move)))
         {
             continue;
         }
@@ -793,7 +798,7 @@ Value Search::quiescence_search(Position& position, Depth depth, Value alpha,
             continue;
         }
 
-        non_quiet_move_count += int(!is_move_quiet);
+        non_quiet_move_count += int(!move_is_quiet);
 
         LOG_DEBUG("[%d] DO MOVE %s alpha=%ld beta=%ld", info->_ply,
                   position.uci(move).c_str(), alpha, beta);

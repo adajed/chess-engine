@@ -78,6 +78,10 @@ class Position
     {
         return _piece_position[piece][pos];
     }
+    Square piece_position(Color color, PieceKind pk, int pos = 0) const
+    {
+        return piece_position(make_piece(color, pk), pos);
+    }
 
     Square piece_position(Color color, PieceKind pieceKind, int pos = 0) const
     {
