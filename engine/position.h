@@ -83,12 +83,6 @@ class Position
         return piece_position(make_piece(color, pk), pos);
     }
 
-    Square piece_position(Color color, PieceKind pieceKind, int pos = 0) const
-    {
-        return piece_position(make_piece(color, pieceKind), pos);
-    }
-
-
     Castling castling_rights() const { return _castling_rights; }
     Square enpassant_square() const { return _enpassant_square; }
 
