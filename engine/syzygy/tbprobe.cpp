@@ -22,12 +22,12 @@
 
 #include <algorithm>
 #include <atomic>
+#include <array>
 #include <cstdint>
 #include <cstring>   // For std::memset and std::memcpy
 #include <deque>
 #include <fstream>
 #include <iostream>
-#include <list>
 #include <sstream>
 #include <type_traits>
 #include <mutex>
@@ -75,7 +75,7 @@ enum TBType { WDL, DTZ }; // Used as template parameter
 enum TBFlag { STM = 1, Mapped = 2, WinPlies = 4, LossPlies = 8, Wide = 16, SingleValue = 128 };
 
 inline WDLScore operator-(WDLScore d) { return WDLScore(-int(d)); }
-inline Square operator^(Square s, int i) { return Square(int(s) ^ i); }
+/* inline Square operator^(Square s, int i) { return Square(int(s) ^ i); } */
 
 const std::string PieceKindToChar = " PNBRQK";
 

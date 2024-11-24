@@ -20,9 +20,8 @@ endif()
 if (MSVC)
     add_compile_options(/W4)
 else()
-    add_compile_options(-Wall -Wextra -Wpedantic -Werror -flto -march=native -mtune=native -mpopcnt)
+    add_compile_options(-Wall -Wextra -Wpedantic -march=native -mtune=native -mpopcnt)
 endif()
-add_compile_definitions("LOG_LEVEL=${LOG_LEVEL}")
 
 if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
@@ -61,11 +60,13 @@ list(REMOVE_ITEM engine_src "${PROJECT_SOURCE_DIR}/engine/main.cpp")
 list(APPEND engine_src "${PROJECT_SOURCE_DIR}/engine/syzygy/tbprobe.cpp")
 
 add_library(engine_objs OBJECT ${engine_src})
+target_compile_options(engine_objs PRIVATE -flto -DLOG_LEVEL=${LOG_LEVEL})
 target_include_directories(engine_objs
     PUBLIC "${PROJECT_SOURCE_DIR}/engine")
 
 # engine
 add_executable(chessplusplus engine/main.cpp)
+target_compile_options(chessplusplus PRIVATE -flto -DLOG_LEVEL=${LOG_LEVEL})
 target_link_libraries(chessplusplus PUBLIC engine_objs)
 target_include_directories(chessplusplus
     PUBLIC "${PROJECT_SOURCE_DIR}/engine")
@@ -92,21 +93,19 @@ include(FetchContent)
 FetchContent_Declare(
   googletest
   GIT_REPOSITORY https://github.com/google/googletest.git
-  GIT_TAG        release-1.11.0
+  GIT_TAG        v1.15.2
 )
 FetchContent_MakeAvailable(googletest)
-add_library(GTest::GTest INTERFACE IMPORTED)
-target_link_libraries(GTest::GTest INTERFACE gtest_main)
 
 # tests
 file(GLOB tests_src "tests/*.cpp")
 add_executable(unitTests ${tests_src})
-target_compile_options(unitTests PRIVATE "-DSYZYGY_TEST_DIR=\"${SYZYGY_TEST_DIR}\"")
+target_compile_options(unitTests PRIVATE -fno-lto -DSYZYGY_TEST_DIR=\"${SYZYGY_TEST_DIR}\")
 target_link_libraries(unitTests
     PUBLIC
         engine_objs
     PRIVATE
-        GTest::GTest)
+        gtest_main)
 target_include_directories(unitTests
     PUBLIC
         "${PROJECT_BINARY_DIR}"

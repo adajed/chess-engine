@@ -1,9 +1,7 @@
 #ifndef CHESS_ENGINE_TYPES_H_
 #define CHESS_ENGINE_TYPES_H_
 
-#include <array>
 #include <cassert>
-#include <cinttypes>
 #include <cstdlib>
 #include <iostream>
 

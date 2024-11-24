@@ -247,7 +247,7 @@ void Search::iter_search()
     int64_t elapsed = 0LL;
 
     MoveList pv_list;
-    Value previous_score;
+    Value previous_score = VALUE_DRAW;
     Move previous_moves[MAX_DEPTH + 1];
     previous_moves[0] = NO_MOVE;
     Value min_bound = -VALUE_INFINITE;

@@ -4,6 +4,8 @@
 #include "types.h"
 #include "value.h"
 
+#include <array>
+
 namespace engine
 {
 
@@ -31,7 +33,8 @@ struct Info
 
     std::array<Move, MAX_DEPTH * 2> _pv_list;
     int _pv_list_length;
-    Value _static_eval; int _ply;
+    Value _static_eval;
+    int _ply;
     Move _current_move;
     Move _killer_moves[2];
     PieceHistory* _counter_move;
@@ -40,6 +43,5 @@ struct Info
 using StackInfo = std::array<Info, MAX_DEPTH * 2>;
 
 } /* namespace engine */
-
 
 #endif /* end of include guard: CHESS_ENGINE_INFO_H_ */
