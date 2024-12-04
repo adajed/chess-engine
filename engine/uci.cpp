@@ -7,6 +7,9 @@
 #include "transposition_table.h"
 #include "chessplusplusConfig.h"
 
+#define STRINGIFY_(x) #x
+#define STRINGIFY(x) STRINGIFY_(x)
+
 namespace engine
 {
 Uci::Uci() : search(nullptr), position(), quit(false), options(), polyglot(), polyglot_sample_random_move(true)
@@ -99,7 +102,11 @@ void Uci::loop()
 bool Uci::uci_command(std::istringstream& /* istream */)
 {
     logger_sync_out << "id name " << ENGINE_NAME << " "
-              << CHESSPLUSPLUS_VERSION << sync_endl;
+              << CHESSPLUSPLUS_VERSION;
+#ifdef TAG
+    logger << " " << STRINGIFY(TAG);
+#endif
+    logger << sync_endl;
     logger_sync_out << "id author Adam Jedrych" << sync_endl;
     logger << sync_endl;
 

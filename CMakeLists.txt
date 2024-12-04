@@ -23,6 +23,10 @@ else()
     add_compile_options(-Wall -Wextra -Wpedantic -march=native -mtune=native -mpopcnt)
 endif()
 
+if (ENGINE_TAG)
+    add_compile_definitions(TAG=${ENGINE_TAG})
+endif()
+
 if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
 endif()
