@@ -171,6 +171,8 @@ constexpr Score VULNERABLE_QUEEN_PENALTY = S(-30, -15);
 
 constexpr Score WEAK_BACKRANK_PENALTY = S(-75, -100);
 
+constexpr Score NOT_CENTRALIZED_KING_PENALTY = S(0, -100);
+
 constexpr Score WEAK_KING_DIAGONALS = S(-5, 0);
 constexpr Score WEAK_KING_LINES = S(-7, 0);
 

@@ -434,6 +434,11 @@ Score PositionScorer::score_king(const Position& position)
             value += WEAK_BACKRANK_PENALTY;
     }
 
+    // centralize king in the endgame
+    int distanceToCenter = std::min(std::min(distance(ownKing, SQ_D4), distance(ownKing, SQ_D5)),
+                                    std::min(distance(ownKing, SQ_E4), distance(ownKing, SQ_E5)));
+    value += Value(distanceToCenter) * NOT_CENTRALIZED_KING_PENALTY;
+
     Bitboard possible_bishop_check = slider_attack<BISHOP>(
         ownKing, position.pieces() & ~_blockers_for_king[side]);
     if (position.pieces(!side, QUEEN) ||
