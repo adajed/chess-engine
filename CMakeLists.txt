@@ -116,9 +116,6 @@ target_include_directories(unitTests
         "${PROJECT_SOURCE_DIR}/tests"
         "${PROJECT_SOURCE_DIR}/engine")
 
-configure_file(tests/run_perft_tests.sh run_perft_tests.sh)
-configure_file(tests/run_search_tests.sh run_search_tests.sh)
-
 add_test(NAME unitTests COMMAND "./unitTests")
-add_test(NAME perftTests COMMAND "./tests/run_perft_tests.sh" WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
-add_test(NAME searchTests COMMAND "./tests/run_search_tests.sh" WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
+add_test(NAME perftTests COMMAND "./tests/run_perft_tests.sh" "${PROJECT_BINARY_DIR}/chessplusplus" WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
+add_test(NAME searchTests COMMAND "./tests/run_search_tests.sh" "${PROJECT_BINARY_DIR}/chessplusplus" WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
