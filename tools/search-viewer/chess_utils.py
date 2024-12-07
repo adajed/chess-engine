@@ -2,6 +2,8 @@ import chess
 
 
 def parseMove(fen: str, move_uci: None) -> str:
+    if move_uci == 'a1a1':
+        move_uci = '0000'
     if not isinstance(move_uci, str):
         return move_uci
     board = chess.Board(fen=fen)
