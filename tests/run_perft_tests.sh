@@ -2,7 +2,7 @@
 
 trap "{ exit 255; }" INT
 
-PROGRAM="./build/chessplusplus"
+PROGRAM=${1:-./build/chessplusplus}
 
 run_perft_test()
 

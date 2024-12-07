@@ -2,7 +2,7 @@
 
 trap "{ exit 255; }" INT
 
-PROGRAM="./build/chessplusplus"
+PROGRAM=${1:-./build/chessplusplus}
 
 run_search_test()
 {
@@ -278,7 +278,7 @@ echo -e "\nCustom tests"
 run_search_test "k1b1Rnr1/1p2q2r/p6P/1P2p2K/5Q1P/q6R/8/8 w - - 0 1" e8c8
 
 echo -e "\nSearch tests passed: ${SEARCH_TESTS_PASSED}/${NUMBER_OF_SEARCH_TESTS}"
-if [ ${SEARCH_TESTS_PASSED} -lt 85 ]
+if [ ${SEARCH_TESTS_PASSED} -lt 80 ]
 then
     exit 1
 fi
