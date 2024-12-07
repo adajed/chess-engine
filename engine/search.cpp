@@ -104,8 +104,8 @@ Value compute_search_delta(Move* previous_best_moves, Depth current_depth,
         }
     }
 
-    Value delta = static_cast<Value>(
-        100.0 / (0.33 * static_cast<double>(no_times_move_repeated) + 1.0));
+    double defaultDelta = PIECE_VALUE[PAWN].eg / 4;
+    double delta = defaultDelta / (0.1 * std::pow(no_times_move_repeated, 1.25) + 1.0);
     return delta;
 }
 
@@ -277,10 +277,11 @@ void Search::iter_search()
         while (true)
         {
             ASSERT(min_bound < max_bound);
-            LOG_DEBUG("Search depth=%d bound=[%ld, %ld] delta=%ld\n",
+            LOG_INFO("Search depth=%d bound=[%ld, %ld] delta=%ld",
                       _current_depth, min_bound, max_bound, delta);
             result = search(_position, _current_depth, min_bound, max_bound,
                             info + 1);
+            LOG_INFO("Result %ld", result);
 
             if (result <= min_bound)
             {
@@ -289,7 +290,7 @@ void Search::iter_search()
             }
             else if (result >= max_bound)
             {
-                min_bound = std::max(result - 1, -VALUE_INFINITE);
+                // if we fail high, don't change min_bound
                 max_bound = std::min(max_bound + delta, VALUE_INFINITE);
             }
             else
@@ -297,10 +298,8 @@ void Search::iter_search()
 
             if (stop_search || check_limits()) break;
 
-            delta = std::min(
-                static_cast<Value>(std::max(static_cast<float>(delta), 100.0f) *
-                                   1.25f),
-                VALUE_INFINITE);
+            delta = std::min(static_cast<Value>(static_cast<float>(delta) * 1.25f),
+                             VALUE_INFINITE);
         }
 
         previous_score = result;
