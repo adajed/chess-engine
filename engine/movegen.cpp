@@ -68,17 +68,17 @@ Bitboard forbidden_squares(const Position& pos)
     Bitboard pawns = pos.pieces(!side, PAWN);
     bb |= shift<UPLEFT>(pawns) | shift<UPRIGHT>(pawns);
 
-    for (int i = 0; i < pos.number_of_pieces(OPPONENT_KNIGHT); ++i)
+    for (int i = 0; i < pos.no_pieces(OPPONENT_KNIGHT); ++i)
         bb |= KNIGHT_MASK[pos.piece_position(OPPONENT_KNIGHT, i)];
 
     Bitboard blockers = pos.pieces() ^ square_bb(king_sq);
-    for (int i = 0; i < pos.number_of_pieces(OPPONENT_BISHOP); ++i)
+    for (int i = 0; i < pos.no_pieces(OPPONENT_BISHOP); ++i)
         bb |= slider_attack<BISHOP>(pos.piece_position(OPPONENT_BISHOP, i),
                                     blockers);
-    for (int i = 0; i < pos.number_of_pieces(OPPONENT_ROOK); ++i)
+    for (int i = 0; i < pos.no_pieces(OPPONENT_ROOK); ++i)
         bb |=
             slider_attack<ROOK>(pos.piece_position(OPPONENT_ROOK, i), blockers);
-    for (int i = 0; i < pos.number_of_pieces(OPPONENT_QUEEN); ++i)
+    for (int i = 0; i < pos.no_pieces(OPPONENT_QUEEN); ++i)
         bb |= slider_attack<QUEEN>(pos.piece_position(OPPONENT_QUEEN, i),
                                    blockers);
 
@@ -601,17 +601,17 @@ Bitboard attacked_squares(const Position& position, Color side)
     Bitboard pawns = position.pieces(opponent, PAWN);
     bb |= shift(pawns, UPLEFT) | shift(pawns, UPRIGHT);
 
-    for (int i = 0; i < position.number_of_pieces(OPPONENT_KNIGHT); ++i)
+    for (int i = 0; i < position.no_pieces(OPPONENT_KNIGHT); ++i)
         bb |= KNIGHT_MASK[position.piece_position(OPPONENT_KNIGHT, i)];
 
     Bitboard blockers = position.pieces();
-    for (int i = 0; i < position.number_of_pieces(OPPONENT_BISHOP); ++i)
+    for (int i = 0; i < position.no_pieces(OPPONENT_BISHOP); ++i)
         bb |= slider_attack<BISHOP>(position.piece_position(OPPONENT_BISHOP, i),
                                     blockers);
-    for (int i = 0; i < position.number_of_pieces(OPPONENT_ROOK); ++i)
+    for (int i = 0; i < position.no_pieces(OPPONENT_ROOK); ++i)
         bb |= slider_attack<ROOK>(position.piece_position(OPPONENT_ROOK, i),
                                   blockers);
-    for (int i = 0; i < position.number_of_pieces(OPPONENT_QUEEN); ++i)
+    for (int i = 0; i < position.no_pieces(OPPONENT_QUEEN); ++i)
         bb |= slider_attack<QUEEN>(position.piece_position(OPPONENT_QUEEN, i),
                                    blockers);
 

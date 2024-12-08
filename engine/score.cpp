@@ -4,6 +4,7 @@
 #include "bithacks.h"
 #include "endgame.h"
 #include "logger.h"
+#include "move_bitboards.h"
 #include "position.h"
 #include "position_bitboards.h"
 #include "types.h"
@@ -75,7 +76,7 @@ void PositionScorer::setup(const Position& position)
         pawn_attacks<side>(position.pieces(make_piece(side, PAWN)));
 
     _attacked_by_bb[side][KNIGHT] = 0ULL;
-    for (int i = 0; i < position.number_of_pieces(make_piece(side, KNIGHT));
+    for (int i = 0; i < position.no_pieces(make_piece(side, KNIGHT));
          ++i)
     {
         Square sq = position.piece_position(make_piece(side, KNIGHT), i);
@@ -83,7 +84,7 @@ void PositionScorer::setup(const Position& position)
     }
 
     _attacked_by_bb[side][BISHOP] = 0ULL;
-    for (int i = 0; i < position.number_of_pieces(make_piece(side, BISHOP));
+    for (int i = 0; i < position.no_pieces(make_piece(side, BISHOP));
          ++i)
     {
         Square sq = position.piece_position(make_piece(side, BISHOP), i);
@@ -94,7 +95,7 @@ void PositionScorer::setup(const Position& position)
     }
 
     _attacked_by_bb[side][ROOK] = 0ULL;
-    for (int i = 0; i < position.number_of_pieces(make_piece(side, ROOK)); ++i)
+    for (int i = 0; i < position.no_pieces(make_piece(side, ROOK)); ++i)
     {
         Square sq = position.piece_position(make_piece(side, ROOK), i);
         // remove own rooks and queens from blockers (x-ray attack)
@@ -104,7 +105,7 @@ void PositionScorer::setup(const Position& position)
     }
 
     _attacked_by_bb[side][QUEEN] = 0ULL;
-    for (int i = 0; i < position.number_of_pieces(make_piece(side, QUEEN)); ++i)
+    for (int i = 0; i < position.no_pieces(make_piece(side, QUEEN)); ++i)
     {
         Square sq = position.piece_position(make_piece(side, QUEEN), i);
         // remove own bishops and queens from blockers (x-ray attack)
@@ -150,7 +151,7 @@ Score PositionScorer::score_pieces_for_side(const Position& position)
     {
         _piece_scores[side][KNIGHT] = Score{};
         constexpr Piece piece = make_piece(side, KNIGHT);
-        int no_pieces = position.number_of_pieces(piece);
+        int no_pieces = position.no_pieces(piece);
 
         for (int i = 0; i < no_pieces; ++i)
         {
@@ -192,7 +193,7 @@ Score PositionScorer::score_pieces_for_side(const Position& position)
     {
         _piece_scores[side][BISHOP] = Score{};
         constexpr Piece piece = make_piece(side, BISHOP);
-        int no_pieces = position.number_of_pieces(piece);
+        int no_pieces = position.no_pieces(piece);
 
         for (int i = 0; i < no_pieces; ++i)
         {
@@ -239,7 +240,7 @@ Score PositionScorer::score_pieces_for_side(const Position& position)
     {
         _piece_scores[side][ROOK] = Score{};
         constexpr Piece piece = make_piece(side, ROOK);
-        int no_pieces = position.number_of_pieces(piece);
+        int no_pieces = position.no_pieces(piece);
 
         for (int i = 0; i < no_pieces; ++i)
         {
@@ -292,7 +293,7 @@ Score PositionScorer::score_pieces_for_side(const Position& position)
     {
         _piece_scores[side][QUEEN] = Score{};
         constexpr Piece piece = make_piece(side, QUEEN);
-        int no_pieces = position.number_of_pieces(piece);
+        int no_pieces = position.no_pieces(piece);
 
         for (int i = 0; i < no_pieces; ++i)
         {
@@ -392,15 +393,28 @@ Score PositionScorer::score_king_safety(const Position& position)
             compareScores);
     }
 
+    // penalty for oponents pieces attacking king's neighbourhood
+    Bitboard const kingNeighbourhood = KING_MASK[ownKing];
+    score += popcount(_attacked_by_bb[!side][KNIGHT] & kingNeighbourhood)
+           * KING_NEIGHBOURHOOD_ATTACK_PENALTY[KNIGHT];
+    score += popcount(_attacked_by_bb[!side][BISHOP] & kingNeighbourhood)
+           * KING_NEIGHBOURHOOD_ATTACK_PENALTY[BISHOP];
+    score += popcount(_attacked_by_bb[!side][ROOK] & kingNeighbourhood)
+           * KING_NEIGHBOURHOOD_ATTACK_PENALTY[ROOK];
+    score += popcount(_attacked_by_bb[!side][QUEEN] & kingNeighbourhood)
+           * KING_NEIGHBOURHOOD_ATTACK_PENALTY[QUEEN];
+
     // penalty for distance from own pawns in endgame
     // tries to bring king closer to pawns
     const Piece MY_PAWN = make_piece(side, PAWN);
-    int no_pawns = position.number_of_pieces(MY_PAWN);
+    int no_pawns = position.no_pieces(MY_PAWN);
+    int min_distance_to_pawn = std::numeric_limits<int>::max();
     for (int i = 0; i < no_pawns; ++i)
     {
-        score += Value(distance(ownKing, position.piece_position(MY_PAWN, i))) *
-                 KING_PAWN_PROXIMITY_PENALTY;
+        min_distance_to_pawn = std::min(distance(ownKing, position.piece_position(MY_PAWN, i)),
+                                        min_distance_to_pawn);
     }
+    score += min_distance_to_pawn * KING_PAWN_PROXIMITY_PENALTY;
 
     return score;
 }
@@ -478,7 +492,7 @@ Score PositionScorer::score_pawns_for_side(const Position& position)
     constexpr int up = side == WHITE ? 1 : -1;
 
     Score value{};
-    int num_pawns = position.number_of_pieces(pawn);
+    int num_pawns = position.no_pieces(pawn);
 
     Bitboard ourPawns = position.pieces(side, PAWN);
     Bitboard theirPawns = position.pieces(!side, PAWN);
@@ -539,14 +553,14 @@ Score PositionScorer::score_pawns_for_side(const Position& position)
 Value PositionScorer::game_phase_weight(const Position& position)
 {
     Value weight = 0;
-    weight += position.number_of_pieces(W_KNIGHT) * PIECE_WEIGHTS[KNIGHT];
-    weight += position.number_of_pieces(W_BISHOP) * PIECE_WEIGHTS[BISHOP];
-    weight += position.number_of_pieces(W_ROOK) * PIECE_WEIGHTS[ROOK];
-    weight += position.number_of_pieces(W_QUEEN) * PIECE_WEIGHTS[QUEEN];
-    weight += position.number_of_pieces(B_KNIGHT) * PIECE_WEIGHTS[KNIGHT];
-    weight += position.number_of_pieces(B_BISHOP) * PIECE_WEIGHTS[BISHOP];
-    weight += position.number_of_pieces(B_ROOK) * PIECE_WEIGHTS[ROOK];
-    weight += position.number_of_pieces(B_QUEEN) * PIECE_WEIGHTS[QUEEN];
+    weight += position.no_pieces(W_KNIGHT) * PIECE_WEIGHTS[KNIGHT];
+    weight += position.no_pieces(W_BISHOP) * PIECE_WEIGHTS[BISHOP];
+    weight += position.no_pieces(W_ROOK) * PIECE_WEIGHTS[ROOK];
+    weight += position.no_pieces(W_QUEEN) * PIECE_WEIGHTS[QUEEN];
+    weight += position.no_pieces(B_KNIGHT) * PIECE_WEIGHTS[KNIGHT];
+    weight += position.no_pieces(B_BISHOP) * PIECE_WEIGHTS[BISHOP];
+    weight += position.no_pieces(B_ROOK) * PIECE_WEIGHTS[ROOK];
+    weight += position.no_pieces(B_QUEEN) * PIECE_WEIGHTS[QUEEN];
 
     return std::min(weight, MAX_PIECE_WEIGTHS);
 }

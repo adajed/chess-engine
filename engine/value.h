@@ -2,6 +2,7 @@
 #define CHESS_ENGINE_VALUE_H_
 
 #include "types.h"
+
 #include <cstdint>
 #include <iomanip>
 
@@ -165,11 +166,15 @@ constexpr Score KING_ATTACKER_PENALTY[PIECE_KIND_NUM] = {
     //          pawn,    knight,    bishop,    rook,   queen,    king
     S(0, 0), S(0, 0), S(-7, -4), S(-4, -3), S(0, 0), S(0, 0), S(0, 0)};
 
+constexpr Score KING_NEIGHBOURHOOD_ATTACK_PENALTY[PIECE_KIND_NUM] = {
+    //          pawn,    knight,    bishop,    rook,   queen,    king
+    S(0, 0), S(0, 0), S(-5, 0), S(-5, 0), S(-4, 0), S(-3, 0), S(0, 0)};
+
 constexpr Score PAWN_ISLAND_PENALTY = S(-10, -20);
 
 constexpr Score VULNERABLE_QUEEN_PENALTY = S(-30, -15);
 
-constexpr Score WEAK_BACKRANK_PENALTY = S(-75, -100);
+constexpr Score WEAK_BACKRANK_PENALTY = S(-5, -100);
 
 constexpr Score NOT_CENTRALIZED_KING_PENALTY = S(0, -100);
 

@@ -21,7 +21,7 @@ void validate(const Position& position)
         Bitboard piece_bb = position.pieces(get_color(piece), get_piece_kind(piece));
         Bitboard bb = 0ULL;
 
-        for (int i = 0; i < position.number_of_pieces(piece); ++i)
+        for (int i = 0; i < position.no_pieces(piece); ++i)
         {
             Square square = position.piece_position(piece, i);
             EXPECT_EQ(bb & square_bb(square), 0ULL);
@@ -62,7 +62,7 @@ void validate(const Position& position)
 
     for (Piece piece = W_PAWN; piece <= B_KING; ++piece)
     {
-        for (int i = 0; i < position.number_of_pieces(piece); ++i)
+        for (int i = 0; i < position.no_pieces(piece); ++i)
         {
             Square square = position.piece_position(piece, i);
             EXPECT_EQ(position.piece_at(square), piece);

@@ -69,7 +69,10 @@ class Position
     bool is_repeated() const;
 
     Piece piece_at(Square square) const { return _board[square]; }
-    int number_of_pieces(Piece piece) const { return _piece_count[piece]; }
+
+    int no_pieces(Piece piece) const { return _piece_count[piece]; }
+    int no_pieces(Color color, PieceKind pk) const { return no_pieces(make_piece(color, pk)); }
+
     Square piece_position(Piece piece, int pos = 0) const
     {
         return _piece_position[piece][pos];
