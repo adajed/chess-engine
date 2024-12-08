@@ -400,7 +400,7 @@ Value Search::search(Position& position, Depth depth, Value alpha, Value beta,
                   position.uci(entryPtr->value.move).c_str());
 
         const bool allowCutoff =
-            !PV_NODE && _ttable.isCurrentEpoch(entryPtr->epoch);
+            !PV_NODE || _ttable.isCurrentEpoch(entryPtr->epoch);
 
         if (allowCutoff)
         {
@@ -769,7 +769,7 @@ Value Search::quiescence_search(Position& position, Depth depth, Value alpha,
 
     _move_orderer.order_moves(position, begin, end, info);
 
-    /* int non_quiet_move_count = 0; */
+    int non_quiet_move_count = 0;
 
     for (int move_count = 0; move_count < n_moves; ++move_count)
     {
@@ -779,10 +779,9 @@ Value Search::quiescence_search(Position& position, Depth depth, Value alpha,
             &_counter_move_table[position.piece_at(from(move))][to(move)];
 
         const bool move_is_quiet = position.move_is_quiet(move);
-        if (!is_in_check && move_is_quiet)// && !position.move_gives_check(move))
-        /* if (!is_in_check && */
-        /*         (non_quiet_move_count > 2 || move_is_quiet) && */
-        /*         (depth < MAX_DEPTH - 1 || !position.move_gives_check(move))) */
+        if (!is_in_check &&
+                (non_quiet_move_count > 2 || move_is_quiet) &&
+                (depth < MAX_DEPTH - 1 || !position.move_gives_check(move)))
         {
             continue;
         }
@@ -799,7 +798,7 @@ Value Search::quiescence_search(Position& position, Depth depth, Value alpha,
             continue;
         }
 
-        /* non_quiet_move_count += int(!move_is_quiet); */
+        non_quiet_move_count += int(!move_is_quiet);
 
         LOG_DEBUG("[%d] DO MOVE %s alpha=%ld beta=%ld", info->_ply,
                   position.uci(move).c_str(), alpha, beta);
