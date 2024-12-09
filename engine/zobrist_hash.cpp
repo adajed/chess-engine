@@ -111,7 +111,7 @@ void HashKey::init(const Position& position)
     for (Color color : {WHITE, BLACK})
     {
         Piece piece = make_piece(color, PAWN);
-        for (int i = 0; i < position.number_of_pieces(piece); ++i)
+        for (int i = 0; i < position.no_pieces(piece); ++i)
         {
             Square square = position.piece_position(piece, i);
             _pawn_key ^= PIECE_HASH[piece][square];
@@ -123,7 +123,7 @@ void HashKey::init(const Position& position)
         for (PieceKind piece_kind : {KNIGHT, BISHOP, ROOK, QUEEN, KING})
         {
             Piece piece = make_piece(color, piece_kind);
-            for (int i = 0; i < position.number_of_pieces(piece); ++i)
+            for (int i = 0; i < position.no_pieces(piece); ++i)
             {
                 Square square = position.piece_position(piece, i);
                 _piece_key ^= PIECE_HASH[piece][square];

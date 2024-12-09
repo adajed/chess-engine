@@ -5,7 +5,7 @@ namespace engine
 {
 
 #if LOG_LEVEL > 0
-#define LOG_INFO(msg, ...) do { fprintf(stderr, msg "\n", ##__VA_ARGS__); } while(false)
+#define LOG_INFO(msg, ...) do { fprintf(stdout, msg "\n", ##__VA_ARGS__); } while(false)
 #else
 #define LOG_INFO(msg, ...) do { } while(false)
 #endif

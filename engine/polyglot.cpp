@@ -376,7 +376,7 @@ uint64_t PolyglotBook::hash(const Position& position)
 
     for (Piece piece = W_PAWN; piece <= B_KING; ++piece)
     {
-        int size = position.number_of_pieces(piece);
+        int size = position.no_pieces(piece);
         for (int i = 0; i < size; ++i)
             key ^= POLYGLOT_PIECE[piece][position.piece_position(piece, i)];
     }

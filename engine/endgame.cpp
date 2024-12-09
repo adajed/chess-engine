@@ -216,7 +216,7 @@ template <>
 bool Endgame<kKPsK>::applies(const Position& position) const
 {
     return position.no_nonpawns(strongSide) == 0
-        && position.number_of_pieces(make_piece(strongSide, PAWN)) >= 2
+        && position.no_pieces(make_piece(strongSide, PAWN)) >= 2
         && position.pieces(weakSide) == position.pieces(weakSide, KING);
 }
 
@@ -238,7 +238,7 @@ Value Endgame<kKPsK>::strongSideScore(const Position& position) const
     }
 
     return VALUE_KNOWN_WIN
-         + PIECE_VALUE[PAWN].eg * position.number_of_pieces(make_piece(strongSide, PAWN))
+         + PIECE_VALUE[PAWN].eg * position.no_pieces(make_piece(strongSide, PAWN))
          + Value(rank(normalize(most_advanced_pawn(pawns, strongSide), strongSide)));
 }
 
@@ -282,11 +282,11 @@ Value Endgame<kKXK>::strongSideScore(const Position& position) const
     const Square weakKingSq = position.piece_position(weakKing, 0);
 
     Value v = VALUE_DRAW;
-    v += PIECE_VALUE[PAWN].eg * position.number_of_pieces(make_piece(strongSide, PAWN));
-    v += PIECE_VALUE[KNIGHT].eg * position.number_of_pieces(make_piece(strongSide, KNIGHT));
-    v += PIECE_VALUE[BISHOP].eg * position.number_of_pieces(make_piece(strongSide, BISHOP));
-    v += PIECE_VALUE[ROOK].eg * position.number_of_pieces(make_piece(strongSide, ROOK));
-    v += PIECE_VALUE[QUEEN].eg * position.number_of_pieces(make_piece(strongSide, QUEEN));
+    v += PIECE_VALUE[PAWN].eg * position.no_pieces(make_piece(strongSide, PAWN));
+    v += PIECE_VALUE[KNIGHT].eg * position.no_pieces(make_piece(strongSide, KNIGHT));
+    v += PIECE_VALUE[BISHOP].eg * position.no_pieces(make_piece(strongSide, BISHOP));
+    v += PIECE_VALUE[ROOK].eg * position.no_pieces(make_piece(strongSide, ROOK));
+    v += PIECE_VALUE[QUEEN].eg * position.no_pieces(make_piece(strongSide, QUEEN));
     v += PUSH_TO_EDGE_BONUS[weakKingSq] +
          PUSH_CLOSE[distance(strongKingSq, weakKingSq)];
 
@@ -316,9 +316,9 @@ bool Endgame<kKRBKR>::applies(const Position& position) const
 template <>
 bool Endgame<kKBPsK>::applies(const Position& position) const
 {
-    return position.number_of_pieces(make_piece(strongSide, BISHOP)) == 1
+    return position.no_pieces(make_piece(strongSide, BISHOP)) == 1
         && position.no_nonpawns(strongSide) == 1
-        && position.number_of_pieces(make_piece(strongSide, PAWN)) > 0
+        && position.no_pieces(make_piece(strongSide, PAWN)) > 0
         && position.pieces(weakSide) == position.pieces(weakSide, KING);
 }
 
@@ -343,7 +343,7 @@ Value Endgame<kKBPsK>::strongSideScore(const Position& position) const
     }
 
     return VALUE_KNOWN_WIN
-        + PIECE_VALUE[PAWN].eg * position.number_of_pieces(make_piece(strongSide, PAWN))
+        + PIECE_VALUE[PAWN].eg * position.no_pieces(make_piece(strongSide, PAWN))
         + PIECE_VALUE[BISHOP].eg
         + Value(rank(normalize(most_advanced_pawn(pawns, strongSide), strongSide)));
 }
@@ -418,10 +418,10 @@ Value Endgame<kKNNKP>::strongSideScore(const Position& position) const
 template <>
 bool Endgame<kKBPsKB>::applies(const Position& position) const
 {
-    return position.number_of_pieces(make_piece(strongSide, BISHOP)) == 1
-        && position.number_of_pieces(make_piece(weakSide, BISHOP)) == 1
-        && position.number_of_pieces(make_piece(strongSide, PAWN)) >= 1
-        && position.number_of_pieces(make_piece(weakSide, PAWN)) == 0
+    return position.no_pieces(make_piece(strongSide, BISHOP)) == 1
+        && position.no_pieces(make_piece(weakSide, BISHOP)) == 1
+        && position.no_pieces(make_piece(strongSide, PAWN)) >= 1
+        && position.no_pieces(make_piece(weakSide, PAWN)) == 0
         && position.no_nonpawns(strongSide) == 1
         && position.no_nonpawns(weakSide) == 1;
 }
@@ -450,7 +450,7 @@ Value Endgame<kKBPsKB>::strongSideScore(const Position& position) const
         bool pawnOnFile[FILE_NUM] = {false};
         File file1 = file(furthestPawnSq);
         File file2 = file1;
-        for (int i = 0; i < position.number_of_pieces(make_piece(strongSide, PAWN)); ++i)
+        for (int i = 0; i < position.no_pieces(make_piece(strongSide, PAWN)); ++i)
         {
             File f = file(position.piece_position(make_piece(strongSide, PAWN), i));
             if (f != file1) file2 = f;
@@ -504,10 +504,10 @@ Value Endgame<kKRKN>::strongSideScore(const Position& position) const
 template <>
 bool Endgame<kKQKRPs>::applies(const Position& position) const
 {
-    return position.number_of_pieces(make_piece(strongSide, QUEEN)) == 1
-        && position.number_of_pieces(make_piece(weakSide, ROOK)) == 1
-        && position.number_of_pieces(make_piece(strongSide, PAWN)) == 0
-        && position.number_of_pieces(make_piece(weakSide, PAWN)) >= 1
+    return position.no_pieces(make_piece(strongSide, QUEEN)) == 1
+        && position.no_pieces(make_piece(weakSide, ROOK)) == 1
+        && position.no_pieces(make_piece(strongSide, PAWN)) == 0
+        && position.no_pieces(make_piece(weakSide, PAWN)) >= 1
         && position.no_nonpawns(strongSide) == 1
         && position.no_nonpawns(weakSide) == 1;
 }
@@ -531,13 +531,13 @@ Value Endgame<kKQKRPs>::strongSideScore(const Position& position) const
 template <>
 bool Endgame<kKmmKm>::applies(const Position& position) const
 {
-    const int strongMinorsCount = position.number_of_pieces(make_piece(strongSide, KNIGHT))
-                                + position.number_of_pieces(make_piece(strongSide, BISHOP));
-    const int weakMinorsCount = position.number_of_pieces(make_piece(weakSide, KNIGHT))
-                              + position.number_of_pieces(make_piece(weakSide, BISHOP));
+    const int strongMinorsCount = position.no_pieces(make_piece(strongSide, KNIGHT))
+                                + position.no_pieces(make_piece(strongSide, BISHOP));
+    const int weakMinorsCount = position.no_pieces(make_piece(weakSide, KNIGHT))
+                              + position.no_pieces(make_piece(weakSide, BISHOP));
     return strongMinorsCount == 2 && weakMinorsCount == 1
-        && position.number_of_pieces(make_piece(strongSide, PAWN)) == 0
-        && position.number_of_pieces(make_piece(weakSide, PAWN)) == 0
+        && position.no_pieces(make_piece(strongSide, PAWN)) == 0
+        && position.no_pieces(make_piece(weakSide, PAWN)) == 0
         && position.no_nonpawns(strongSide) == 2
         && position.no_nonpawns(weakSide) == 1;
 }
@@ -545,8 +545,8 @@ bool Endgame<kKmmKm>::applies(const Position& position) const
 template <>
 Value Endgame<kKmmKm>::strongSideScore(const Position& position) const
 {
-    if (!(position.number_of_pieces(make_piece(strongSide, BISHOP)) == 2 &&
-            position.number_of_pieces(make_piece(weakSide, KNIGHT)) == 1))
+    if (!(position.no_pieces(make_piece(strongSide, BISHOP)) == 2 &&
+            position.no_pieces(make_piece(weakSide, KNIGHT)) == 1))
         return VALUE_POSITIVE_DRAW;
     const Square bishop1Sq = position.piece_position(make_piece(strongSide, BISHOP), 0);
     const Square bishop2Sq = position.piece_position(make_piece(strongSide, BISHOP), 1);
