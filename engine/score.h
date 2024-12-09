@@ -39,7 +39,7 @@ class PositionScorer
     Score score_king(const Position& position);
 
     template <Color side>
-    Score score_king_shelter(const Position& position, Square king_sq);
+    Score score_king_shelter(const Position& position, Square king_sq, int no_moves_required=0);
 
     template <Color side>
     Score score_king_safety(const Position& position);

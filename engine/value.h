@@ -65,7 +65,7 @@ inline std::ostream& operator<< (std::ostream& os, Score s)
 
 constexpr Score PIECE_VALUE[PIECE_KIND_NUM] = {
     //     ,       pawn ,     knight ,     bishop ,         rook ,        queen ,     king
-    S(0, 0), S(300, 370), S(890, 880), S(900, 950), S(1400, 1550), S(2900, 2800), S(0, 0)};
+    S(0, 0), S(300, 330), S(890, 880), S(900, 950), S(1400, 1550), S(2900, 2800), S(0, 0)};
 
 
 constexpr Value VALUE_ALL_PIECES = 2 * (8 * PIECE_VALUE[PAWN] +
@@ -107,7 +107,7 @@ constexpr bool is_mate(Value score)
 
 constexpr Score MOBILITY_BONUS[PIECE_KIND_NUM] = {
     //           pawn,   knight,  bishop,     rook,   queen,    king
-    S(0, 0), S(5, 10), S(12, 24), S(18, 8), S(6, 24), S(4, 12), S(0, 10)};
+    S(0, 0), S(5, 10), S(12, 24), S(20, 12), S(16, 24), S(8, 12), S(0, 10)};
 
 constexpr Score PINNED_PENALTY[PIECE_KIND_NUM] = {
     //              pawn,      knight,      bishop,    rook,   queen,    king
@@ -160,11 +160,11 @@ constexpr Score CONTROL_SPACE[PIECE_KIND_NUM] = {
 
 constexpr Score KING_PROTECTOR_PENALTY[PIECE_KIND_NUM] = {
     //          pawn,    knight,    bishop,    rook,   queen,    king
-    S(0, 0), S(0, 0), S(-6, -4), S(-5, -3), S(0, 0), S(0, 0), S(0, 0)};
+    S(0, 0), S(0, 0), S(-6, -1), S(-6, -1), S(0, 0), S(0, 0), S(0, 0)};
 
 constexpr Score KING_ATTACKER_PENALTY[PIECE_KIND_NUM] = {
     //          pawn,    knight,    bishop,    rook,   queen,    king
-    S(0, 0), S(0, 0), S(-7, -4), S(-4, -3), S(0, 0), S(0, 0), S(0, 0)};
+    S(0, 0), S(0, 0), S(-5, -3), S(-4, -3), S(0, 0), S(0, 0), S(0, 0)};
 
 constexpr Score KING_NEIGHBOURHOOD_ATTACK_PENALTY[PIECE_KIND_NUM] = {
     //          pawn,    knight,    bishop,    rook,   queen,    king

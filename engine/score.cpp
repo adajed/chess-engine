@@ -9,6 +9,7 @@
 #include "position_bitboards.h"
 #include "types.h"
 
+#include <cmath>
 #include <iomanip>
 
 namespace engine
@@ -75,17 +76,15 @@ void PositionScorer::setup(const Position& position)
     _attacked_by_bb[side][PAWN] =
         pawn_attacks<side>(position.pieces(make_piece(side, PAWN)));
 
-    _attacked_by_bb[side][KNIGHT] = 0ULL;
-    for (int i = 0; i < position.no_pieces(make_piece(side, KNIGHT));
-         ++i)
+    _attacked_by_bb[side][KNIGHT] = no_squares_bb;
+    for (int i = 0; i < position.no_pieces(side, KNIGHT); ++i)
     {
         Square sq = position.piece_position(make_piece(side, KNIGHT), i);
         _attacked_by_bb[side][KNIGHT] |= KNIGHT_MASK[sq];
     }
 
-    _attacked_by_bb[side][BISHOP] = 0ULL;
-    for (int i = 0; i < position.no_pieces(make_piece(side, BISHOP));
-         ++i)
+    _attacked_by_bb[side][BISHOP] = no_squares_bb;
+    for (int i = 0; i < position.no_pieces(side, BISHOP); ++i)
     {
         Square sq = position.piece_position(make_piece(side, BISHOP), i);
         // remove own bishops and queens from blockers (x-ray attack)
@@ -94,8 +93,8 @@ void PositionScorer::setup(const Position& position)
         _attacked_by_bb[side][BISHOP] |= slider_attack<BISHOP>(sq, blockers);
     }
 
-    _attacked_by_bb[side][ROOK] = 0ULL;
-    for (int i = 0; i < position.no_pieces(make_piece(side, ROOK)); ++i)
+    _attacked_by_bb[side][ROOK] = no_squares_bb;
+    for (int i = 0; i < position.no_pieces(side, ROOK); ++i)
     {
         Square sq = position.piece_position(make_piece(side, ROOK), i);
         // remove own rooks and queens from blockers (x-ray attack)
@@ -104,8 +103,8 @@ void PositionScorer::setup(const Position& position)
         _attacked_by_bb[side][ROOK] |= slider_attack<ROOK>(sq, blockers);
     }
 
-    _attacked_by_bb[side][QUEEN] = 0ULL;
-    for (int i = 0; i < position.no_pieces(make_piece(side, QUEEN)); ++i)
+    _attacked_by_bb[side][QUEEN] = no_squares_bb;
+    for (int i = 0; i < position.no_pieces(side, QUEEN); ++i)
     {
         Square sq = position.piece_position(make_piece(side, QUEEN), i);
         // remove own bishops and queens from blockers (x-ray attack)
@@ -351,11 +350,16 @@ Score PositionScorer::score_pieces_for_side(const Position& position)
 
 template <Color side>
 Score PositionScorer::score_king_shelter(const Position& position,
-                                         Square king_sq)
+                                         Square king_sq,
+                                         int no_moves_required)
 {
-    Bitboard pawns_in_king_area =
-        KING_MASK[king_sq] & position.pieces(side, PAWN);
-    return Value(popcount(pawns_in_king_area)) * KING_SAFETY_BONUS;
+    Rank const rank1 = rank(king_sq);
+    Rank const rank2 = static_cast<Rank>(rank1 + (side == WHITE ? 1 : -1));
+    Bitboard const pawns_in_king_area = KING_MASK[king_sq] & position.pieces(side, PAWN);
+    int const no_pawns = popcount(pawns_in_king_area & RANKS_BB[rank1]) + 2 * popcount(pawns_in_king_area & RANKS_BB[rank2]);
+    constexpr Value max_scale = 9;
+    Value scale = std::floor(max_scale - std::pow(no_moves_required, 1.5));
+    return ((scale * no_pawns) / max_scale) * KING_SAFETY_BONUS;
 }
 
 template <Color side>
@@ -365,17 +369,23 @@ Score PositionScorer::score_king_safety(const Position& position)
     position.piece_position(make_piece(!side, KING), 0);
     const Castling kingCastling = side == WHITE ? W_OO : B_OO;
     const Castling queenCastling = side == WHITE ? W_OOO : B_OOO;
+    const Bitboard kingCastlingRoute = square_bb(relative_square<side>(SQ_F1))
+                                     | square_bb(relative_square<side>(SQ_G1));
+    const Bitboard queenCastlingRoute = square_bb(relative_square<side>(SQ_B1))
+                                      | square_bb(relative_square<side>(SQ_C1))
+                                      | square_bb(relative_square<side>(SQ_D1));
 
     auto compareScores = [](Score a, Score b) { return a.mg < b.mg; };
 
-    Score score = score_king_shelter<side>(position, ownKing);
+    Score score = score_king_shelter<side>(position, ownKing, 0);
 
     // if we can castle kingside check if there is better shelter
     if (position.castling_rights() & kingCastling)
     {
+        int const no_moves_required = popcount(position.pieces() & kingCastlingRoute) + 1;
         score = std::max(
             score,
-            score_king_shelter<side>(position, relative_square<side>(SQ_G1)),
+            score_king_shelter<side>(position, relative_square<side>(SQ_G1), no_moves_required),
             compareScores);
     }
 
@@ -383,13 +393,15 @@ Score PositionScorer::score_king_safety(const Position& position)
     // b1)
     if (position.castling_rights() & queenCastling)
     {
+        int const no_moves_required = popcount(position.pieces() & queenCastlingRoute) + 1;
         score = std::max(
             score,
-            score_king_shelter<side>(position, relative_square<side>(SQ_C1)),
+            score_king_shelter<side>(position, relative_square<side>(SQ_C1), no_moves_required),
             compareScores);
         score = std::max(
             score,
-            score_king_shelter<side>(position, relative_square<side>(SQ_B1)),
+            // additional 1 move required to move king to B1
+            score_king_shelter<side>(position, relative_square<side>(SQ_B1), no_moves_required + 1),
             compareScores);
     }
 
@@ -406,15 +418,18 @@ Score PositionScorer::score_king_safety(const Position& position)
 
     // penalty for distance from own pawns in endgame
     // tries to bring king closer to pawns
-    const Piece MY_PAWN = make_piece(side, PAWN);
-    int no_pawns = position.no_pieces(MY_PAWN);
-    int min_distance_to_pawn = std::numeric_limits<int>::max();
-    for (int i = 0; i < no_pawns; ++i)
+    Piece const  MY_PAWN = make_piece(side, PAWN);
+    int const no_pawns = position.no_pieces(MY_PAWN);
+    if (no_pawns > 0)
     {
-        min_distance_to_pawn = std::min(distance(ownKing, position.piece_position(MY_PAWN, i)),
-                                        min_distance_to_pawn);
+        int min_distance_to_pawn = std::numeric_limits<int>::max();
+        for (int i = 0; i < no_pawns; ++i)
+        {
+            min_distance_to_pawn = std::min(distance(ownKing, position.piece_position(MY_PAWN, i)),
+                                            min_distance_to_pawn);
+        }
+        score += min_distance_to_pawn * KING_PAWN_PROXIMITY_PENALTY;
     }
-    score += min_distance_to_pawn * KING_PAWN_PROXIMITY_PENALTY;
 
     return score;
 }
