@@ -351,6 +351,8 @@ Value Search::search(Position& position, Depth depth, Value alpha, Value beta,
     // without any move
     if (!ROOT_NODE && (position.is_repeated() || position.is_draw())) EXIT_SEARCH(VALUE_DRAW);
 
+    (info + 2)->_killer_moves[0] = (info + 2)->_killer_moves[1] = NO_MOVE;
+
     Move* begin = ROOT_NODE ? &(*_root_moves.begin()) : MOVE_LIST[info->_ply];
     Move* end = ROOT_NODE ? &(*_root_moves.end())
                           : generate_moves(position, position.color(), begin);
@@ -494,10 +496,16 @@ Value Search::search(Position& position, Depth depth, Value alpha, Value beta,
     {
         info->_static_eval = _scorer.score(position);
     }
+    LOG_DEBUG("[%d] POSITION score=%ld", info->_ply, info->_static_eval);
 
-    /* const bool improving = !is_in_check && info->_ply >= 2 &&
-     * (info->_static_eval > (info - 2)->_static_eval || (info -
-     * 2)->_static_eval == VALUE_NONE); */
+    /* bool improving = true; */
+    /* if (is_in_check) */
+    /*     improving = false; */
+    /* else if (info->_ply >= 2 && (info - 2)->_static_eval != VALUE_NONE) */
+    /*     improving = info->_static_eval > (info - 2)->_static_eval; */
+    /* else if (info->_ply >= 4 && (info - 4)->_static_eval != VALUE_NONE) */
+    /*     improving = info->_static_eval > (info - 4)->_static_eval; */
+    /* LOG_DEBUG("[%d] IMPROVING %d", info->_ply, int(improving)); */
 
     // null move pruning
     if (!PV_NODE && !IS_NULL && !is_in_check &&
@@ -551,6 +559,13 @@ Value Search::search(Position& position, Depth depth, Value alpha, Value beta,
         LOG_DEBUG("[%d] FUTILITY PRUNING", info->_ply);
     }
 
+    constexpr Value NEGATIVE_SEE_CAPUTURE_THRESHOLD = -2 * PIECE_VALUE[PAWN].eg;
+    const bool doNegativeSeeCapturePruning = !ROOT_NODE && !PV_NODE && !is_in_check && depth <= 2;
+    if (doNegativeSeeCapturePruning)
+    {
+        LOG_DEBUG("[%d] NEGATIVE SEE CAPTURES PRUNING", info->_ply);
+    }
+
     Move best_move = NO_MOVE;
     _move_orderer.order_moves(position, begin, end, info);
 
@@ -561,6 +576,12 @@ Value Search::search(Position& position, Depth depth, Value alpha, Value beta,
 
         if (doFutilityPruning && moveIsQuiet
                 && !position.move_gives_check(move))
+        {
+            continue;
+        }
+
+        // prune captures at low depth with negative SEE
+        if (doNegativeSeeCapturePruning && position.move_is_capture(move) && position.see(move) < NEGATIVE_SEE_CAPUTURE_THRESHOLD)
         {
             continue;
         }
@@ -631,7 +652,10 @@ Value Search::search(Position& position, Depth depth, Value alpha, Value beta,
             {
                 alpha = result;
                 best_move = move;
-                add_new_move_to_pv_list(info, move, info + 1);
+                if (PV_NODE)
+                {
+                    add_new_move_to_pv_list(info, move, info + 1);
+                }
 
                 if (result >= beta)
                 {
@@ -669,7 +693,7 @@ Value Search::search(Position& position, Depth depth, Value alpha, Value beta,
         }
     }
 
-    if (best_move == NO_MOVE)
+    if (best_move == NO_MOVE && PV_NODE)
     {
         best_move = begin[0];
         set_new_pv_list(info, best_move);
@@ -747,7 +771,7 @@ Value Search::quiescence_search(Position& position, Depth depth, Value alpha,
             EXIT_QSEARCH(standpat);
         }
 
-        if (PV_NODE && standpat > alpha) alpha = standpat;
+        alpha = std::max(alpha, standpat);
     }
 
     Move* begin = MOVE_LIST[info->_ply];
@@ -758,6 +782,9 @@ Value Search::quiescence_search(Position& position, Depth depth, Value alpha,
 
     _move_orderer.order_moves(position, begin, end, info);
 
+    constexpr Value CAPTURE_SEE_THRESHOLD = 0;
+
+
     for (int move_count = 0; move_count < n_moves; ++move_count)
     {
         Move move = begin[move_count];
@@ -765,10 +792,18 @@ Value Search::quiescence_search(Position& position, Depth depth, Value alpha,
         info->_counter_move =
             &_counter_move_table[position.piece_at(from(move))][to(move)];
 
-        if (!is_in_check && position.move_is_quiet(move))
-        {
+        const bool move_is_quiet = position.move_is_quiet(move);
+
+        // consider only queen promotions
+        if (!is_in_check && promotion(move) != NO_PIECE_KIND && promotion(move) != QUEEN)
             continue;
-        }
+
+        // don't consider captures with SEE below the threshold
+        if (!is_in_check && position.move_is_capture(move) && depth < MAX_DEPTH - 1 && position.see(move) < CAPTURE_SEE_THRESHOLD)
+            continue;
+
+        if (!is_in_check && move_is_quiet)
+            continue;
 
         LOG_DEBUG("[%d] DO MOVE %s alpha=%ld beta=%ld", info->_ply,
                   position.uci(move).c_str(), alpha, beta);

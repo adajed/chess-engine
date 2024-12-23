@@ -8,6 +8,7 @@
 #include "bitboard.h"
 #include "position.h"
 #include "score.h"
+#include "types.h"
 
 using namespace engine;
 
@@ -500,6 +501,42 @@ TEST(PositionTest, move_types)
         EXPECT_EQ(position.move_is_quiet(move), std::get<2>(test_case)) << std::get<0>(test_case);
         EXPECT_EQ(position.move_is_capture(move), std::get<3>(test_case)) << std::get<0>(test_case);
         EXPECT_EQ(position.move_gives_check(move), std::get<4>(test_case)) << std::get<0>(test_case);
+    }
+}
+
+TEST(PositionTest, see)
+{
+    // fen, move, see
+    using TestCase = std::tuple<std::string, Move, Value>;
+
+    constexpr Value p = PIECE_VALUE[PAWN].eg;
+    constexpr Value n = PIECE_VALUE[KNIGHT].eg;
+    constexpr Value b = PIECE_VALUE[BISHOP].eg;
+    constexpr Value r = PIECE_VALUE[ROOK].eg;
+    constexpr Value q = PIECE_VALUE[QUEEN].eg;
+
+    std::vector<TestCase> test_cases = {
+        {"1k3r2/7b/8/5n2/6P1/4N3/8/1K3R2 w - - 0 1", create_move(SQ_G4, SQ_F5), n},
+        {"1k3r2/7b/8/5n2/6P1/4N3/8/1K3R2 w - - 0 1", create_move(SQ_F1, SQ_F5), n + b - r},
+        {"r1b1k2r/1p1p1p1p/p1n1p2p/q7/2P2P2/1PN5/P2Q2PP/2KR1B1R b kq - 0 16", create_move(SQ_A5, SQ_A2), p - q},
+        {"Q6r/1p3p1p/pkn4p/8/2P2P2/2q5/PP4PP/3K1B1R b - - 1 21", create_move(SQ_C3, SQ_C4), p - q},
+        {"4q1k1/2p5/2pp1p1b/p2n1b1p/P2P2pP/1P4B1/2PQ1PP1/3NN1K1 w - - 2 29", create_move(SQ_G3, SQ_D6), p - b},
+        {"4q1k1/2p5/2pp1p1b/p2n1b1p/P2P2pP/1P4B1/2PQ1PP1/3NN1K1 w - - 2 29", create_move(SQ_D2, SQ_A5), p},
+        {"4q1k1/2p5/2pp1p1b/p2n1b1p/P2P2pP/1P4B1/2PQ1PP1/3NN1K1 w - - 2 29", create_move(SQ_D2, SQ_H6), b},
+        {"r1b2rk1/1p2qppp/2np1n2/p3p3/2PPN3/R2BPN2/1P3PPP/3Q1RK1 w - - 1 13", create_move(SQ_D4, SQ_E5), 0},
+        {"r1b2rk1/1p2qppp/2np1n2/p3p3/2PPN3/R2BPN2/1P3PPP/3Q1RK1 w - - 1 13", create_move(SQ_F3, SQ_E5), p - n},
+        {"r1bq1rk1/1p1nbpp1/2p1pn1p/8/p2P1B2/2NBPN2/PPQ2PPP/2KR3R w - - 0 12", create_move(SQ_C3, SQ_A4), p},
+        {"r1bq1rk1/1p1nbpp1/2p1pn1p/8/p2P1B2/2NBPN2/PPQ2PPP/2KR3R w - - 0 12", create_move(SQ_C2, SQ_A4), r + p - q},
+        {"r2q1br1/1bpk4/ppn1pn1p/1B1p2p1/3N4/P1N1P1BP/1PP2PP1/R2QK2R w KQ - 2 13", create_move(SQ_B5, SQ_C6), 0},
+        {"r1b2rk1/p3qpbp/2pp1np1/8/2p1PB2/P1N2N1P/1PPQ1PP1/R4RK1 b - - 1 14", create_move(SQ_F6, SQ_E4), p},
+    };
+
+    for (const TestCase& test_case : test_cases)
+    {
+        Position position(std::get<0>(test_case));
+        Move move = std::get<1>(test_case);
+
+        EXPECT_EQ(position.see(move), std::get<2>(test_case)) << std::get<0>(test_case) << " " << position.san(move);
     }
 }
 

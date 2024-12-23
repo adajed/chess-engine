@@ -327,6 +327,8 @@ inline int distance(Square from, Square to)
 
 std::ostream& print_bitboard(std::ostream& stream, Bitboard bb);
 
+std::string sq2str(Square sq);
+
 struct Limits
 {
     Limits()

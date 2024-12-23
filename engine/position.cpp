@@ -294,14 +294,31 @@ bool Position::move_is_capture(Move move) const
 
 bool Position::move_gives_check(Move move) const
 {
+    const Square king_sq = piece_position(make_piece(!color(), KING));
+    const Bitboard king_bb = square_bb(king_sq);
+    Bitboard blockers = pieces();
+
+    // castling
+    if (castling(move) != NO_CASTLING)
+    {
+        Square old_king_sq = piece_position(make_piece(color(), KING));
+        Square old_rook_sq = make_square(color() == WHITE ? RANK_1 : RANK_8,
+                                        castling(move) & KING_CASTLING ? FILE_H : FILE_A);
+        Square my_king_sq = make_square(color() == WHITE ? RANK_1 : RANK_8,
+                                        castling(move) & KING_CASTLING ? FILE_G : FILE_C);
+        Square my_rook_sq = make_square(color() == WHITE ? RANK_1 : RANK_8,
+                                        castling(move) & KING_CASTLING ? FILE_F : FILE_D);
+
+        blockers = pieces() ^ square_bb(old_king_sq) ^ square_bb(old_rook_sq) ^ square_bb(my_king_sq) ^ square_bb(my_rook_sq);
+        if (slider_attack<ROOK>(my_rook_sq, blockers) & king_bb)
+            return true;
+    }
+
     const Square from_sq = from(move);
     const Square to_sq = to(move);
     const PieceKind moved_piece_kind = make_piece_kind(piece_at(from_sq));
-    const Square king_sq = piece_position(make_piece(!color(), KING));
     const Bitboard from_bb = square_bb(from_sq);
     const Bitboard to_bb = square_bb(to_sq);
-    const Bitboard king_bb = square_bb(king_sq);
-    Bitboard blockers = pieces();
 
     // direct check
     switch (moved_piece_kind)
@@ -347,22 +364,6 @@ bool Position::move_gives_check(Move move) const
         if (slider_attack<BISHOP>(king_sq, blockers) & pieces(color(), BISHOP, QUEEN))
             return true;
         if (slider_attack<ROOK>(king_sq, blockers) & pieces(color(), ROOK, QUEEN))
-            return true;
-    }
-
-    // castling
-    if (castling(move) != NO_CASTLING)
-    {
-        Square old_king_sq = piece_position(make_piece(color(), KING));
-        Square old_rook_sq = make_square(color() == WHITE ? RANK_1 : RANK_8,
-                                        castling(move) & KING_CASTLING ? FILE_H : FILE_A);
-        Square my_king_sq = make_square(color() == WHITE ? RANK_1 : RANK_8,
-                                        castling(move) & KING_CASTLING ? FILE_G : FILE_C);
-        Square my_rook_sq = make_square(color() == WHITE ? RANK_1 : RANK_8,
-                                        castling(move) & KING_CASTLING ? FILE_F : FILE_D);
-
-        blockers = pieces() ^ square_bb(old_king_sq) ^ square_bb(old_rook_sq) ^ square_bb(my_king_sq) ^ square_bb(my_rook_sq);
-        if (slider_attack<ROOK>(my_rook_sq, blockers) & king_bb)
             return true;
     }
 
@@ -703,6 +704,74 @@ PieceCountVector Position::get_pcv() const
                       _piece_count[W_QUEEN], _piece_count[B_PAWN],
                       _piece_count[B_KNIGHT], _piece_count[B_BISHOP],
                       _piece_count[B_ROOK], _piece_count[B_QUEEN]);
+}
+
+Value Position::see(Move move) const
+{
+    Square from_sq = from(move);
+    Square to_sq = to(move);
+    Color side = color();
+    PieceKind current_piecekind = get_piece_kind(piece_at(from_sq));
+
+    PieceKind pks[32];
+    int counter = 0;
+
+    pks[counter++] = get_piece_kind(piece_at(to_sq));
+
+    Bitboard occupied = pieces() & ~(square_bb(from_sq) | square_bb(to_sq));
+    Bitboard attackers[] = {
+        square_attackers(to_sq, WHITE),
+        square_attackers(to_sq, BLACK)
+    };
+
+    attackers[side] &= ~square_bb(from_sq);
+
+    while (true)
+    {
+        side = !side;
+
+        if (!attackers[side])
+        {
+            break;
+        }
+
+        for (PieceKind pk : {PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING})
+        {
+            Bitboard temp = attackers[side] & pieces(side, pk) & occupied;
+            if (temp)
+            {
+                Square sq = Square(pop_lsb(&temp));
+                attackers[side] &= ~square_bb(sq);
+                occupied &= ~square_bb(sq);
+                pks[counter++] = current_piecekind;
+                current_piecekind = pk;
+                break;
+            }
+        }
+    }
+
+    Value value = 0;
+    counter--;
+    for(; counter > 0; --counter)
+    {
+        value = std::max(Value(0), PIECE_VALUE[pks[counter]].eg - value);
+    }
+    // force first capture
+    value = PIECE_VALUE[pks[0]].eg - value;
+    return value;
+}
+
+Bitboard Position::square_attackers(Square sq, Color color) const
+{
+    Bitboard attackers = no_squares_bb;
+
+    attackers |= pawn_attacks(square_bb(sq), !color) & pieces(color, PAWN);
+    attackers |= KNIGHT_MASK[sq] & pieces(color, KNIGHT);
+    attackers |= slider_attack<BISHOP>(sq, pieces()) & pieces(color, BISHOP, QUEEN);
+    attackers |= slider_attack<ROOK>(sq, pieces()) & pieces(color, ROOK, QUEEN);
+    attackers |= KING_MASK[sq] & pieces(color, KING);
+
+    return attackers;
 }
 
 int Position::no_nonpawns(Color c) const

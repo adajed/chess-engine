@@ -4,6 +4,7 @@
 #include "bitboard.h"
 #include "move_bitboards.h"
 #include "types.h"
+#include "value.h"
 #include "zobrist_hash.h"
 
 #if defined(_WIN32)
@@ -77,6 +78,10 @@ class Position
     {
         return _piece_position[piece][pos];
     }
+    Square piece_position(Color color, PieceKind pk, int pos = 0) const
+    {
+        return piece_position(make_piece(color, pk), pos);
+    }
 
     Castling castling_rights() const { return _castling_rights; }
     Square enpassant_square() const { return _enpassant_square; }
@@ -94,6 +99,10 @@ class Position
     Bitboard pieces(Color c, PieceKind p1, PieceKind p2) const;
 
     PieceCountVector get_pcv() const;
+
+    Value see(Move move) const;
+
+    Bitboard square_attackers(Square sq, Color color) const;
 
     /*
      * Return number of non-pawn pieces for given side.
