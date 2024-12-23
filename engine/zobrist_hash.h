@@ -7,13 +7,6 @@ namespace engine
 {
 class Position;
 
-namespace zobrist 
-{
-
-void init();
-
-}  // namespace zobrist
-
 class HashKey
 {
   public:
