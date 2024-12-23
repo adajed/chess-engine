@@ -713,7 +713,10 @@ Value Position::see(Move move) const
     Color side = color();
     PieceKind current_piecekind = get_piece_kind(piece_at(from_sq));
 
-    Value value = PIECE_VALUE[get_piece_kind(piece_at(to_sq))].eg;
+    PieceKind pks[32];
+    int counter = 0;
+
+    pks[counter++] = get_piece_kind(piece_at(to_sq));
 
     Bitboard occupied = pieces() & ~(square_bb(from_sq) | square_bb(to_sq));
     Bitboard attackers[] = {
@@ -729,31 +732,33 @@ Value Position::see(Move move) const
 
         if (!attackers[side])
         {
-            return side == color() ? -value : value;
+            break;
         }
 
-        Value new_value = VALUE_NONE;
         for (PieceKind pk : {PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING})
         {
             Bitboard temp = attackers[side] & pieces(side, pk) & occupied;
             if (temp)
             {
                 Square sq = Square(pop_lsb(&temp));
-                new_value = PIECE_VALUE[current_piecekind].eg - value;
                 attackers[side] &= ~square_bb(sq);
                 occupied &= ~square_bb(sq);
+                pks[counter++] = current_piecekind;
                 current_piecekind = pk;
                 break;
             }
         }
-
-        if (new_value < 0)
-        {
-            return side == color() ? -value : value;
-        }
-
-        value = new_value;
     }
+
+    Value value = 0;
+    counter--;
+    for(; counter > 0; --counter)
+    {
+        value = std::max(Value(0), PIECE_VALUE[pks[counter]].eg - value);
+    }
+    // force first capture
+    value = PIECE_VALUE[pks[0]].eg - value;
+    return value;
 }
 
 Bitboard Position::square_attackers(Square sq, Color color) const

@@ -69,7 +69,7 @@ EngineWrapper::EngineWrapper(const std::string& command,
         close(CHILD_STDERR_READ);
 
         // Execute the program
-        execl(command_.c_str(), "engine", (char*)NULL);
+        execl(command_.c_str(), command_.c_str(), (char*)NULL);
     }
     else if (pid > pid_t(0))
     {

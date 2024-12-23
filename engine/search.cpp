@@ -559,6 +559,13 @@ Value Search::search(Position& position, Depth depth, Value alpha, Value beta,
         LOG_DEBUG("[%d] FUTILITY PRUNING", info->_ply);
     }
 
+    constexpr Value NEGATIVE_SEE_CAPUTURE_THRESHOLD = -2 * PIECE_VALUE[PAWN].eg;
+    const bool doNegativeSeeCapturePruning = !ROOT_NODE && !PV_NODE && !is_in_check && depth <= 2;
+    if (doNegativeSeeCapturePruning)
+    {
+        LOG_DEBUG("[%d] NEGATIVE SEE CAPTURES PRUNING", info->_ply);
+    }
+
     Move best_move = NO_MOVE;
     _move_orderer.order_moves(position, begin, end, info);
 
@@ -569,6 +576,12 @@ Value Search::search(Position& position, Depth depth, Value alpha, Value beta,
 
         if (doFutilityPruning && moveIsQuiet
                 && !position.move_gives_check(move))
+        {
+            continue;
+        }
+
+        // prune captures at low depth with negative SEE
+        if (doNegativeSeeCapturePruning && position.move_is_capture(move) && position.see(move) < NEGATIVE_SEE_CAPUTURE_THRESHOLD)
         {
             continue;
         }
@@ -758,7 +771,7 @@ Value Search::quiescence_search(Position& position, Depth depth, Value alpha,
             EXIT_QSEARCH(standpat);
         }
 
-        if (PV_NODE && standpat > alpha) alpha = standpat;
+        alpha = std::max(alpha, standpat);
     }
 
     Move* begin = MOVE_LIST[info->_ply];
@@ -769,7 +782,8 @@ Value Search::quiescence_search(Position& position, Depth depth, Value alpha,
 
     _move_orderer.order_moves(position, begin, end, info);
 
-    int non_quiet_move_count = 0;
+    constexpr Value CAPTURE_SEE_THRESHOLD = 0;
+
 
     for (int move_count = 0; move_count < n_moves; ++move_count)
     {
@@ -779,18 +793,16 @@ Value Search::quiescence_search(Position& position, Depth depth, Value alpha,
             &_counter_move_table[position.piece_at(from(move))][to(move)];
 
         const bool move_is_quiet = position.move_is_quiet(move);
-        non_quiet_move_count += int(!move_is_quiet);
 
         // consider only queen promotions
         if (!is_in_check && promotion(move) != NO_PIECE_KIND && promotion(move) != QUEEN)
             continue;
 
-        // don't consider captures with negative SEE
-        if (!is_in_check && position.move_is_capture(move) && depth < MAX_DEPTH - 1 && position.see(move) < PIECE_VALUE[KNIGHT].eg)
+        // don't consider captures with SEE below the threshold
+        if (!is_in_check && position.move_is_capture(move) && depth < MAX_DEPTH - 1 && position.see(move) < CAPTURE_SEE_THRESHOLD)
             continue;
 
-        // only consider first two quiet check evasions
-        if (move_is_quiet && (!is_in_check || non_quiet_move_count > 2))
+        if (!is_in_check && move_is_quiet)
             continue;
 
         LOG_DEBUG("[%d] DO MOVE %s alpha=%ld beta=%ld", info->_ply,
