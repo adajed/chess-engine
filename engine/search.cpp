@@ -779,26 +779,19 @@ Value Search::quiescence_search(Position& position, Depth depth, Value alpha,
             &_counter_move_table[position.piece_at(from(move))][to(move)];
 
         const bool move_is_quiet = position.move_is_quiet(move);
-        if (!is_in_check &&
-                (non_quiet_move_count > 2 || move_is_quiet) &&
-                (depth < MAX_DEPTH - 1 || !position.move_gives_check(move)))
-        {
-            continue;
-        }
+        non_quiet_move_count += int(!move_is_quiet);
 
         // consider only queen promotions
-        if (promotion(move) != NO_PIECE_KIND && promotion(move) != QUEEN)
-        {
+        if (!is_in_check && promotion(move) != NO_PIECE_KIND && promotion(move) != QUEEN)
             continue;
-        }
 
         // don't consider captures with negative SEE
-        if (position.move_is_capture(move) && position.see(move) < 0)
-        {
+        if (!is_in_check && position.move_is_capture(move) && depth < MAX_DEPTH - 1 && position.see(move) < PIECE_VALUE[KNIGHT].eg)
             continue;
-        }
 
-        non_quiet_move_count += int(!move_is_quiet);
+        // only consider first two quiet check evasions
+        if (move_is_quiet && (!is_in_check || non_quiet_move_count > 2))
+            continue;
 
         LOG_DEBUG("[%d] DO MOVE %s alpha=%ld beta=%ld", info->_ply,
                   position.uci(move).c_str(), alpha, beta);
