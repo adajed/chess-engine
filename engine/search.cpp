@@ -21,10 +21,10 @@
 namespace engine
 {
 
-int late_move_reduction(Depth /* depth */, int move_number)
+int late_move_reduction(Depth depth, int move_number)
 {
     move_number = std::min(move_number, 64);
-    return static_cast<int>(std::floor(1 + std::log(move_number)));
+    return static_cast<int>(std::floor(1 + 0.6 * std::log(move_number) * std::log(depth)));
 }
 
 std::string score2str(Value score)
@@ -510,14 +510,14 @@ Value Search::search(Position& position, Depth depth, Value alpha, Value beta,
     }
     LOG_DEBUG("[%d] POSITION score=%ld", info->_ply, info->_static_eval);
 
-    /* bool improving = true; */
-    /* if (is_in_check) */
-    /*     improving = false; */
-    /* else if (info->_ply >= 2 && (info - 2)->_static_eval != VALUE_NONE) */
-    /*     improving = info->_static_eval > (info - 2)->_static_eval; */
-    /* else if (info->_ply >= 4 && (info - 4)->_static_eval != VALUE_NONE) */
-    /*     improving = info->_static_eval > (info - 4)->_static_eval; */
-    /* LOG_DEBUG("[%d] IMPROVING %d", info->_ply, int(improving)); */
+    bool improving = true;
+    if (is_in_check)
+        improving = false;
+    else if (info->_ply >= 2 && (info - 2)->_static_eval != VALUE_NONE)
+        improving = info->_static_eval > (info - 2)->_static_eval;
+    else if (info->_ply >= 4 && (info - 4)->_static_eval != VALUE_NONE)
+        improving = info->_static_eval > (info - 4)->_static_eval;
+    LOG_DEBUG("[%d] IMPROVING %d", info->_ply, int(improving));
 
     // null move pruning
     if (!PV_NODE && !IS_NULL && !is_in_check &&
@@ -625,6 +625,7 @@ Value Search::search(Position& position, Depth depth, Value alpha, Value beta,
                 if (move == info->_killer_moves[0] ||
                     move == info->_killer_moves[1])
                     reduction--;
+                reduction += improving ? 0 : 1;
             }
             else
             {
