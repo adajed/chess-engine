@@ -214,6 +214,14 @@ void Search::init_search()
 
 void Search::print_info(Value result, Depth depth, int64_t elapsed, Info* info)
 {
+#if LOG_LEVEL > 0
+    std::stringstream str;
+    for (int d = MAX_DEPTH - 1; d > 0; --d)
+    {
+        if (_stats.at_depth_nodes_searched[d] > 0)
+            str << d << ":" << _stats.at_depth_nodes_searched[d] << ",";
+    }
+#endif
     logger_sync_out << "info "
               << "depth " << depth << " "
               << "score " << score2str(result) << " "
@@ -223,6 +231,7 @@ void Search::print_info(Value result, Depth depth, int64_t elapsed, Info* info)
               << "nonpvnodes " << _stats.non_pv_nodes_searched << " "
               << "qpvnodes " << _stats.quiescence_pv_nodes_searched << " "
               << "qnonpvnodes " << _stats.quiescence_nonpv_nodes_searched << " "
+              << "depthnodes " << str.str() << " "
 #endif
               << "nps " << (_stats.nodes_searched * 1000 / (elapsed + 1)) << " "
               << "tbhits " << _stats.tb_hits << " "
@@ -374,7 +383,10 @@ Value Search::search(Position& position, Depth depth, Value alpha, Value beta,
 
     // update search stats
     _stats.nodes_searched++;
+#if LOG_LEVEL > 0
     (PV_NODE ? _stats.pv_nodes_searched : _stats.non_pv_nodes_searched)++;
+    _stats.at_depth_nodes_searched[depth]++;
+#endif
 #if LOG_LEVEL >= 2
     uint64_t savedNumNodesSearched = _stats.nodes_searched;
 #endif
@@ -754,7 +766,9 @@ Value Search::quiescence_search(Position& position, Depth depth, Value alpha,
 
     // update search stats
     _stats.nodes_searched++;
+#if LOG_LEVEL > 0
     (PV_NODE ? _stats.quiescence_pv_nodes_searched : _stats.quiescence_nonpv_nodes_searched)++;
+#endif
 #if LOG_LEVEL >= 2
     uint64_t savedNumNodesSearched = _stats.nodes_searched;
 #endif
