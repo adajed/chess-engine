@@ -33,7 +33,14 @@ struct SearchStats
         , quiescence_nonpv_nodes_searched(0)
         , tt_hits(0)
         , tb_hits(0)
+#if LOG_LEVEL > 0
+        , at_depth_nodes_searched{}
+#endif
     {
+#if LOG_LEVEL > 0
+        for (int d = 0 ; d < MAX_DEPTH; ++d)
+            at_depth_nodes_searched[d] = 0;
+#endif
     }
 
     /**
@@ -64,6 +71,13 @@ struct SearchStats
      * @brief Number of tablebase hits.
      */
     uint64_t tb_hits;
+
+#if LOG_LEVEL > 0
+    /**
+     * @brief Number of nodes searched at given depth.
+     */
+    std::array<NodeCount, MAX_DEPTH> at_depth_nodes_searched;
+#endif
 };
 
 class Search

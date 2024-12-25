@@ -21,10 +21,10 @@
 namespace engine
 {
 
-int late_move_reduction(Depth /* depth */, int move_number)
+int late_move_reduction(Depth depth, int move_number)
 {
     move_number = std::min(move_number, 64);
-    return static_cast<int>(std::floor(1 + std::log(move_number)));
+    return static_cast<int>(std::floor(1 + 0.6 * std::log(move_number) * std::log(depth)));
 }
 
 std::string score2str(Value score)
@@ -214,6 +214,14 @@ void Search::init_search()
 
 void Search::print_info(Value result, Depth depth, int64_t elapsed, Info* info)
 {
+#if LOG_LEVEL > 0
+    std::stringstream str;
+    for (int d = MAX_DEPTH - 1; d > 0; --d)
+    {
+        if (_stats.at_depth_nodes_searched[d] > 0)
+            str << d << ":" << _stats.at_depth_nodes_searched[d] << ",";
+    }
+#endif
     logger_sync_out << "info "
               << "depth " << depth << " "
               << "score " << score2str(result) << " "
@@ -223,6 +231,7 @@ void Search::print_info(Value result, Depth depth, int64_t elapsed, Info* info)
               << "nonpvnodes " << _stats.non_pv_nodes_searched << " "
               << "qpvnodes " << _stats.quiescence_pv_nodes_searched << " "
               << "qnonpvnodes " << _stats.quiescence_nonpv_nodes_searched << " "
+              << "depthnodes " << str.str() << " "
 #endif
               << "nps " << (_stats.nodes_searched * 1000 / (elapsed + 1)) << " "
               << "tbhits " << _stats.tb_hits << " "
@@ -374,7 +383,10 @@ Value Search::search(Position& position, Depth depth, Value alpha, Value beta,
 
     // update search stats
     _stats.nodes_searched++;
+#if LOG_LEVEL > 0
     (PV_NODE ? _stats.pv_nodes_searched : _stats.non_pv_nodes_searched)++;
+    _stats.at_depth_nodes_searched[depth]++;
+#endif
 #if LOG_LEVEL >= 2
     uint64_t savedNumNodesSearched = _stats.nodes_searched;
 #endif
@@ -498,14 +510,14 @@ Value Search::search(Position& position, Depth depth, Value alpha, Value beta,
     }
     LOG_DEBUG("[%d] POSITION score=%ld", info->_ply, info->_static_eval);
 
-    /* bool improving = true; */
-    /* if (is_in_check) */
-    /*     improving = false; */
-    /* else if (info->_ply >= 2 && (info - 2)->_static_eval != VALUE_NONE) */
-    /*     improving = info->_static_eval > (info - 2)->_static_eval; */
-    /* else if (info->_ply >= 4 && (info - 4)->_static_eval != VALUE_NONE) */
-    /*     improving = info->_static_eval > (info - 4)->_static_eval; */
-    /* LOG_DEBUG("[%d] IMPROVING %d", info->_ply, int(improving)); */
+    bool improving = true;
+    if (is_in_check)
+        improving = false;
+    else if (info->_ply >= 2 && (info - 2)->_static_eval != VALUE_NONE)
+        improving = info->_static_eval > (info - 2)->_static_eval;
+    else if (info->_ply >= 4 && (info - 4)->_static_eval != VALUE_NONE)
+        improving = info->_static_eval > (info - 4)->_static_eval;
+    LOG_DEBUG("[%d] IMPROVING %d", info->_ply, int(improving));
 
     // null move pruning
     if (!PV_NODE && !IS_NULL && !is_in_check &&
@@ -613,6 +625,7 @@ Value Search::search(Position& position, Depth depth, Value alpha, Value beta,
                 if (move == info->_killer_moves[0] ||
                     move == info->_killer_moves[1])
                     reduction--;
+                reduction += improving ? 0 : 1;
             }
             else
             {
@@ -754,7 +767,9 @@ Value Search::quiescence_search(Position& position, Depth depth, Value alpha,
 
     // update search stats
     _stats.nodes_searched++;
+#if LOG_LEVEL > 0
     (PV_NODE ? _stats.quiescence_pv_nodes_searched : _stats.quiescence_nonpv_nodes_searched)++;
+#endif
 #if LOG_LEVEL >= 2
     uint64_t savedNumNodesSearched = _stats.nodes_searched;
 #endif
